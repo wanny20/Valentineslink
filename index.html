@@ -21,7 +21,7 @@ body {
     font-family: Arial, sans-serif;
 }
 
-/* MAIN CONTAINER */
+/* CONTAINER */
 .container {
     width: 100%;
     max-width: 500px;
@@ -44,7 +44,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: width 0.4s ease, height 0.4s ease;
+    transition: width 0.4s ease;
 }
 
 .image-container img {
@@ -53,7 +53,7 @@ body {
     object-fit: cover;
 }
 
-/* BUTTON AREA */
+/* CONTROLS */
 .controls {
     width: 100%;
     display: flex;
@@ -70,7 +70,7 @@ body {
     font-size: 1.2rem;
     font-weight: bold;
     cursor: pointer;
-    transition: padding 0.4s ease, font-size 0.4s ease, transform 0.2s ease;
+    transition: padding 0.3s ease, font-size 0.3s ease, transform 0.2s ease;
 }
 
 .btn:hover {
@@ -133,16 +133,11 @@ body {
     gap: 25px;
 }
 
-/* MOBILE TUNING (6.5" PHONES) */
+/* MOBILE TUNING */
 @media (max-width: 430px) {
     .btn {
         width: 100%;
         max-width: 260px;
-        font-size: 1.1rem;
-    }
-
-    .controls {
-        gap: 16px;
     }
 }
 </style>
@@ -155,7 +150,7 @@ body {
     <!-- MAIN SCREEN -->
     <div id="mainScreen">
         <div class="image-container" id="imageContainer">
-            <img id="currentImage" src="Will you.png" alt="Main Image">
+            <img src="Will you.png" alt="Main Image">
         </div>
 
         <div class="controls">
@@ -167,7 +162,7 @@ body {
     <!-- SUCCESS SCREEN -->
     <div id="successScreen" class="hidden success-screen">
         <div class="image-container">
-            <img src="wasakin.png" alt="Success Image">
+            <img src="success.png" alt="Success Image">
         </div>
         <button id="backBtn" class="btn btn-back">Back</button>
     </div>
@@ -183,37 +178,33 @@ const backBtn = document.getElementById('backBtn');
 const imageContainer = document.getElementById('imageContainer');
 
 let noClicks = 0;
+let yesLocked = false;
 
 function handleNoClick() {
+    if (yesLocked) return;
+
     noClicks++;
 
-    /* YES BUTTON GROW (RESPONSIVE) */
-    const yesPadding = 16 + noClicks * 8;
-    const yesFont = 1.2 + noClicks * 0.2;
+    /* YES BUTTON GROW — CLAMPED */
+    const maxFont = 2.5;
+    const yesFont = Math.min(1.2 + noClicks * 0.2, maxFont);
+    const yesPadding = Math.min(16 + noClicks * 8, 48);
 
-    yesBtn.style.padding = `${yesPadding}px ${yesPadding * 2}px`;
     yesBtn.style.fontSize = `${yesFont}rem`;
+    yesBtn.style.padding = `${yesPadding}px ${yesPadding * 2}px`;
 
-    /* IMAGE GROW (LIMITED FOR MOBILE) */
-    const baseSize = imageContainer.offsetWidth;
-    const newSize = Math.min(baseSize + 40, window.innerWidth * 0.9);
-
-    imageContainer.style.width = `${newSize}px`;
+    /* IMAGE GROW — MOBILE SAFE */
+    const base = imageContainer.offsetWidth;
+    const maxImage = window.innerWidth * 0.9;
+    imageContainer.style.width = `${Math.min(base + 40, maxImage)}px`;
 
     /* NO BUTTON ESCAPE */
-    const push = Math.min(noClicks * 40, 250);
-    const scale = Math.max(1 - noClicks * 0.15, 0.1);
-    const opacity = Math.max(1 - noClicks * 0.25, 0);
+    noBtn.style.transform = `translateX(${Math.min(noClicks * 40, 220)}px) scale(${Math.max(1 - noClicks * 0.15, 0.1)})`;
+    noBtn.style.opacity = Math.max(1 - noClicks * 0.25, 0);
 
-    noBtn.style.transform = `translateX(${push}px) scale(${scale})`;
-    noBtn.style.opacity = opacity;
-
-    /* FULLSCREEN TRIGGERS */
-    if (newSize >= window.innerWidth * 0.9) {
-        imageContainer.classList.add('fullscreen-image');
-    }
-
-    if (yesFont >= 3) {
+    /* FORCE FULLSCREEN BEFORE YES CAN LEAVE VIEW */
+    if (yesFont >= maxFont) {
+        yesLocked = true;
         yesBtn.classList.add('fullscreen-yes');
         noBtn.classList.add('no-hidden');
     }
@@ -232,13 +223,14 @@ function handleBackClick() {
 
 function resetAll() {
     noClicks = 0;
+    yesLocked = false;
 
     imageContainer.classList.remove('fullscreen-image');
     imageContainer.style.width = '';
 
     yesBtn.classList.remove('fullscreen-yes');
-    yesBtn.style.padding = '';
     yesBtn.style.fontSize = '';
+    yesBtn.style.padding = '';
 
     noBtn.classList.remove('no-hidden');
     noBtn.style.transform = '';
